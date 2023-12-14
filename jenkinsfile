@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    environment {
+        // Set environment variables for AWS credentials
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_DEFAULT_REGION    = 'us-east-1'  // Set your AWS region
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout your Terraform code from version control (e.g., Git)
+                checkout scm
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                script {
+                    // Run 'terraform init'
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                script {
+                    // Run 'terraform plan' and save the output to a file for review
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                script {
+                    // Run 'terraform apply' using the plan file
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                script {
+                    // Optionally, perform cleanup steps after the instance is created
+                    // For example, delete the plan file
+                    sh 'rm -f tfplan'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'EC2 instance creation successful!'
+        }
+        failure {
+            echo 'EC2 instance creation failed!'
+        }
+    }
+}
+
